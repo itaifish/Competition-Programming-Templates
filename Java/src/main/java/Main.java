@@ -24,9 +24,10 @@ public class Main {
     final int cars = fileScanner.nextInt();
     final int finishBonus = fileScanner.nextInt();
     Map<String, Street> streetMap = new HashMap<>();
-    Map<String, Integer> streetDensity = new HashMap<>();
+    Map<String, Double> streetDensity = new HashMap<>();
     Intersection[] intersectionObjs = new Intersection[intersections];
     ArrayList<Car> carsList = new ArrayList<>();
+    Map<String, Integer> carsWaitingAtStart = new HashMap<>();
 
     for(int i = 0; i < streets; i++) {
       final int startIntersection = fileScanner.nextInt();
@@ -35,7 +36,8 @@ public class Main {
       final int time = fileScanner.nextInt();
       if(!streetMap.containsKey(name)) {
         streetMap.put(name, new Street(name, time, endIntersection));
-        streetDensity.put(name, 0);
+        streetDensity.put(name, 0.0);
+        carsWaitingAtStart.put(name, 0);
       }
       if(intersectionObjs[startIntersection] == null) {
         intersectionObjs[startIntersection] = new Intersection(startIntersection);
@@ -58,35 +60,44 @@ public class Main {
           car = new Car(str);
           carsList.add(car);
           str.cars.add(car);
+          carsWaitingAtStart.put(streetName, carsWaitingAtStart.get(streetName) + 1);
         } else {
           car.path.add(streetMap.get(streetName));
         }
       }
     }
-//  carsList.forEach(car -> {
-//    for(car.path
-//  });
+
+//    for(Car car : carsList) {
+//      double totalDistance = 0;
+//      for(Street street : car.path) {
+//        totalDistance += street.time;
+//      }
+//      for(Street street : car.path) {
+//        streetDensity.put(street.name, streetDensity.get(street.name) + ( Math.sqrt(totalDistance)));
+//      }
+//    }
+
 
     // DONE PROCESSING DATA
     Map<Integer, ArrayList<Street>> result = new HashMap<>();
     // Now to compute answer
-    final int TOTAL_CYCLE_TIME = Math.min(40, duration);
+    final int TOTAL_CYCLE_TIME = Math.min(4, duration);
     for(Intersection intersection : intersectionObjs) {
-      int totalDensity = 0;
+      double totalDensity = 0;
       for(Street street : intersection.incomingStreets) {
-        totalDensity += streetDensity.get(street.name);
+        totalDensity += Math.sqrt(streetDensity.get(street.name));
       }
       if(totalDensity == 0) {
         continue;
       }
       result.put(intersection.id, new ArrayList<>());
       intersection.incomingStreets.sort((street1, street2) ->
-          streetDensity.get(street2.name) - streetDensity.get(street1.name));
+          carsWaitingAtStart.get(street2.name) - carsWaitingAtStart.get(street1.name));
       for(Street street : intersection.incomingStreets) {
         if(streetDensity.get(street.name) == 0) {
           continue;
         }
-        int trafficTime = (int)(TOTAL_CYCLE_TIME * ((double)streetDensity.get(street.name) / (double)totalDensity));
+        int trafficTime = (int)(TOTAL_CYCLE_TIME * (Math.sqrt(streetDensity.get(street.name)) / (double)totalDensity));
         street.trafficLightTime = Math.max(trafficTime, 1);
         //System.out.println(street.toString() + "\nDensity: " + streetDensity.get(street.name) + "\nTotal Density: " + totalDensity);
         result.get(intersection.id).add(street);
